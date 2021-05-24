@@ -1,5 +1,5 @@
 import re
-from bools.datetime import datetime
+from datetime import datetime
 from dateutil import tz
 
 
