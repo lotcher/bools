@@ -1,2 +1,3 @@
 # btools
-bowaer 工具
+
+标准库函数增强工具<br>
