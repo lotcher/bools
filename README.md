@@ -1,6 +1,6 @@
 [toc]
 
-# bools-0.3.1
+# bools-0.3.2
 
 常用功能集合，助力更高效的编写代码<br>
 
@@ -161,7 +161,7 @@ ZeroDivisionError: division by zero
 
 ```python
 >>> from bools.functools import timeit
->>> @timeit(count=5)
+>>> @timeit
 ... def test():
 ...  for i in range(1000000):
 ...   'hello'+'world'
@@ -173,6 +173,10 @@ ZeroDivisionError: division by zero
 
 
 ## 版本历史
+
+### 0.3.2
+
+> 装饰器函数支持兼容无参数使用，即@timeit == @timeit()
 
 ### 0.3.1
 
