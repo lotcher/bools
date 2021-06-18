@@ -1,6 +1,6 @@
 [toc]
 
-# bools-0.3.0
+# bools-0.3.1
 
 常用功能集合，助力更高效的编写代码<br>
 
@@ -147,13 +147,40 @@ ZeroDivisionError: division by zero
 2
 ```
 
+#### timeit
+
+*函数时间统计装饰器*
+
+```python
+>>> from bools.functools import timeit
+>>> costs = timeit(count=10, return_costs=True)(time.sleep)(0.1)
+[2021-06-18 17:29:37,064][INFO] : 平均执行时间: 0.103s
+>>> costs
+[0.10266709327697754, 0.105194091796875, 0.10502386093139648, 0.10092806816101074, 0.10246896743774414, 0.10508394241333008, 0.10145998001098633, 0.10406613349914551, 0.10434389114379883, 0.10046100616455078]
+```
+
+```python
+>>> from bools.functools import timeit
+>>> @timeit(count=5)
+... def test():
+...  for i in range(1000000):
+...   'hello'+'world'
+... 
+>>> test()
+[2021-06-18 18:03:16,937][INFO] : 平均执行时间: 0.019s
+```
+
 
 
 ## 版本历史
 
+### 0.3.1
+
+> functools增加timeit统计函数执行时间
+
 ### 0.3.0
 
-> 增加functools模块
+> 增加functools模块及catch异常处理
 
 ### 0.2.2
 

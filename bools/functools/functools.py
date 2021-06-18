@@ -1,5 +1,6 @@
 from functools import wraps
 from bools.log import Logger
+from bools.datetime import Datetime
 
 
 def catch(except_func=print, except_return=None, log=''):
@@ -14,6 +15,25 @@ def catch(except_func=print, except_return=None, log=''):
                 Logger.error(log)
                 print(traceback.print_exc())
                 return except_return
+
+        return wrapper
+
+    return decorator
+
+
+def timeit(count=3, return_costs=False):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*arg, **kwargs):
+            current, seconds = Datetime.now().timestamp(), []
+            for i in range(count):
+                func(*arg, **kwargs)
+                now = Datetime.now().timestamp()
+                seconds.append(now - current)
+                current = now
+            Logger.info(f'平均执行时间: {sum(seconds) / count:.3f}s')
+            if return_costs:
+                return seconds
 
         return wrapper
 
