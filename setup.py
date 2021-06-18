@@ -9,7 +9,7 @@ with open(path.join(BASE_DIR, 'requirements.txt'), encoding='utf-8') as f:
 
 setup(
     name='bools',
-    version='0.2.0',
+    version='0.2.1',
     description='常用工具库',
     author='bowaer',
     author_email='cb229435444@outlook.com',

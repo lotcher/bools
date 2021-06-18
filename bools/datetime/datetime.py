@@ -44,6 +44,17 @@ class Datetime(datetime):
             values = re.split(f'[{"".join(seps)}]', datetime_str)
         return Datetime(*map(lambda x: int(x.strip()), values))
 
+    @classmethod
+    def from_datetime(cls, dt: datetime):
+        return Datetime(*[
+            getattr(dt, attr)
+            for attr in ['year', 'month', 'day', 'hour', 'minute', 'second', 'microsecond']
+        ])
+
+    def __add__(self, other):
+        dt = super().__add__(other)
+        return Datetime.from_datetime(dt)
+
 
 def set_default_tz(tz_id):
     Datetime._DEFAULT_TZ = tz.gettz(tz_id)
