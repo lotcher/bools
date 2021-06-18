@@ -4,6 +4,14 @@
 
 常用功能集合，助力更高效的编写代码<br>
 
+## 安装
+
+```shell
+pip3 install -U bools
+```
+
+
+
 ## 文档
 
 ### datetime「时间日期处理」
