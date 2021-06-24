@@ -1,6 +1,6 @@
 [toc]
 
-# bools-0.3.2
+# bools-0.3.2.1
 
 常用功能集合，助力更高效的编写代码<br>
 
@@ -177,6 +177,8 @@ ZeroDivisionError: division by zero
 ### 0.3.2
 
 > 装饰器函数支持兼容无参数使用，即@timeit == @timeit()
+>
+> catch增加exception参数支持自定义异常捕获类型
 
 ### 0.3.1
 

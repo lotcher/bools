@@ -1,15 +1,17 @@
 from functools import wraps
 from bools.log import Logger
 from bools.datetime import Datetime
+from typing import Union, Tuple
 
 
-def catch(_func=None, *, except_func=print, except_return=None, log=''):
+def catch(_func=None, *, exception: Union[Tuple[type(Exception), ...], type(Exception)] = Exception,
+          except_func=print, except_return=None, log=''):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
-            except Exception:
+            except exception:
                 import traceback
                 except_func()
                 Logger.error(log)
