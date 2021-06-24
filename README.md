@@ -1,6 +1,6 @@
 [toc]
 
-# bools-0.3.2.1
+# bools-0.3.3
 
 常用功能集合，助力更高效的编写代码<br>
 
@@ -22,7 +22,7 @@ pip3 install -U bools
 >
 > 有一系列比原生datetime更简洁、高效的与时间字符串交互方式
 
-##### fromtimestamp -> Datetime
+##### fromtimestamp
 
 *特性：支持任意位数的时间戳*
 
@@ -32,7 +32,7 @@ pip3 install -U bools
 Datetime(2022, 8, 9, 7, 6, 40, tzinfo=tzfile('/usr/share/zoneinfo/Asia/Shanghai'))
 ```
 
-##### from_str -> Datetime
+##### from_str
 
 *特性：无须指定format，且性能高于strptime（约2倍）*
 
@@ -43,7 +43,7 @@ Datetime(2021, 1, 1, 12, 32, 24, tzinfo=tzfile('/usr/share/zoneinfo/Asia/Shangha
 Datetime(2021, 1, 1, 12, 32, tzinfo=tzfile('/usr/share/zoneinfo/Asia/Shanghai'))
 ```
 
-##### to_str、str -> str
+##### to_str、str
 
 *特性：便捷的输出时间字符串的任意部分*
 
@@ -54,7 +54,7 @@ Datetime(2021, 1, 1, 12, 32, tzinfo=tzfile('/usr/share/zoneinfo/Asia/Shanghai'))
 '16:20:30'
 ```
 
-##### from_datetime -> Datetime
+##### from_datetime
 
 *将原生datetime转化为Datetime对象*
 
@@ -112,6 +112,18 @@ Datetime(2021, 6, 18, 17, 25, 43, 40131, tzinfo=tzfile('/usr/share/zoneinfo/Asia
 <img src="http://lbj.wiki/static/images/4450203c-d010-11eb-9928-00163e30ead3.png" alt="image-20210618163623997" style="zoom:50%;" />
 
 ### functools「工具函数」
+
+#### parallel
+
+*多进程处理函数。特性：**支持传递lambda函数和无参函数***
+
+```python
+>>> from bools.functools import parallel
+>>> parallel(lambda x:x**2)(range(4))
+[0, 1, 4, 9]
+>>> parallel(lambda :2, count=2)(range(4))
+[2, 2, 2, 2]
+```
 
 #### catch
 
@@ -173,6 +185,10 @@ ZeroDivisionError: division by zero
 
 
 ## 版本历史
+
+### 0.3.3
+
+> 增加并行处理函数parallel，支持传递lambda函数和无参函数
 
 ### 0.3.2
 

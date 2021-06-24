@@ -1,7 +1,8 @@
 from functools import wraps
+from typing import Union, Tuple
+
 from bools.log import Logger
 from bools.datetime import Datetime
-from typing import Union, Tuple
 
 
 def catch(_func=None, *, exception: Union[Tuple[type(Exception), ...], type(Exception)] = Exception,
@@ -40,3 +41,23 @@ def timeit(_func=None, *, count=3, return_costs=False):
         return wrapper
 
     return decorator(_func) if _func else decorator
+
+
+def parallel(func=None, count: int = None):
+    setattr(_outer_func, _FUNC, func)
+
+    def inner(data: list):
+        from multiprocessing import Pool
+        with Pool(count) as p:
+            result = p.map(_outer_func, data)
+        return result
+
+    return inner
+
+
+_FUNC = 'func'
+
+
+def _outer_func(*args, **kwargs):
+    func = getattr(_outer_func, _FUNC)
+    return func(*args, **kwargs) if func.__code__.co_argcount else func()
