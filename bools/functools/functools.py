@@ -3,7 +3,7 @@ from bools.log import Logger
 from bools.datetime import Datetime
 
 
-def catch(_func, *, except_func=print, except_return=None, log=''):
+def catch(_func=None, *, except_func=print, except_return=None, log=''):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
