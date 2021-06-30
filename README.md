@@ -1,8 +1,8 @@
 [toc]
 
-# bools-0.3.3
+# bools-0.4.0
 
-常用功能集合，助力更高效的编写代码<br>
+常用功能集合，更高效的编写代码<br>
 
 ## 安装
 
@@ -13,6 +13,38 @@ pip3 install -U bools
 
 
 ## 文档
+
+### doc 「数据库连接」
+
+#### ElasticSearch
+
+> 支持方便的对ES进行写入分批写入操作<br>
+>
+> 兼容ES6，ES7<br>
+>
+> 支持pandas DataFrame直接写入es，且完成类型映射（date，object，number）。还可指定numeric_detection完成数值字符串的转换
+
+#####  write、to_es
+
+```python
+>>> from bools.dbc import ElasticSearch
+>>> es = ElasticSearch('localhost', 9200)
+>>> es.write(index='test', data=[{'a':1,'b':2}]*2000, batch_size=1000)
+```
+
+<img src="http://lbj.wiki/static/images/c9e43f58-d96b-11eb-9928-00163e30ead3.png" alt="image-20210630142413114" style="zoom:50%;" />
+
+```python
+>>> from bools.dbc import ElasticSearch
+>>> import pandas as pd
+>>> es = ElasticSearch('localhost', 9200, patch_pandas=True)
+
+>>> pd.DataFrame({'v':[4,5,6]}).to_es(index='test')
+>>> pd.DataFrame({'v':['3.14','2.4',6]}).to_es(index='test', numeric_detection=True)
+>>> pd.DataFrame({'v':[7,8,9],'index':['test-1','test-2','test-1']}).to_es(index_col='index')
+```
+
+
 
 ### datetime「时间日期处理」
 
@@ -92,6 +124,8 @@ Datetime(2021, 6, 18, 17, 25, 43, 40131, tzinfo=tzfile('/usr/share/zoneinfo/Asia
 >>> set_default_format('%Y-%m-%d %H:%M:%S')
 ```
 
+
+
 ### log「日志输出」
 
 #### Logger
@@ -110,6 +144,8 @@ Datetime(2021, 6, 18, 17, 25, 43, 40131, tzinfo=tzfile('/usr/share/zoneinfo/Asia
 ```
 
 <img src="http://lbj.wiki/static/images/4450203c-d010-11eb-9928-00163e30ead3.png" alt="image-20210618163623997" style="zoom:50%;" />
+
+
 
 ### functools「工具函数」
 
@@ -185,6 +221,10 @@ ZeroDivisionError: division by zero
 
 
 ## 版本历史
+
+### 0.4.0
+
+> 增加dbc（数据库连接）包，包含Elasticsearch模块
 
 ### 0.3.3
 

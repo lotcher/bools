@@ -6,7 +6,7 @@ from bools.datetime import Datetime
 
 
 def catch(_func=None, *, exception: Union[Tuple[type(Exception), ...], type(Exception)] = Exception,
-          except_func=print, except_return=None, log=''):
+          except_func=None, except_return=None, log='', print_traceback=True):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -14,10 +14,14 @@ def catch(_func=None, *, exception: Union[Tuple[type(Exception), ...], type(Exce
                 return func(*args, **kwargs)
             except exception:
                 import traceback
-                except_func()
-                Logger.error(log)
-                print(traceback.print_exc())
-                return except_return
+                if except_func is not None:
+                    except_func()
+                if log:
+                    Logger.error(log)
+                if print_traceback:
+                    print(traceback.print_exc())
+                if except_return is not None:
+                    return except_return
 
         return wrapper
 
