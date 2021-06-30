@@ -1,6 +1,6 @@
 [toc]
 
-# bools-0.4.0.2
+# bools-0.4.0.3
 
 常用功能集合，更高效的编写代码<br>
 
@@ -38,7 +38,7 @@ pip3 install -U bools
 
 ```python
 >>> from bools.dbc import ElasticSearch
->>> es = ElasticSearch(user='elastic', password='cb1998827', patch_pandas=True)
+>>> es = ElasticSearch('localhost', 9200, patch_pandas=True)
 >>> es.query('test', {
 ...             "query": {
 ...                 "terms": {
