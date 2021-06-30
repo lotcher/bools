@@ -1,6 +1,6 @@
 [toc]
 
-# bools-0.4.0
+# bools-0.4.0.2
 
 常用功能集合，更高效的编写代码<br>
 
@@ -22,9 +22,9 @@ pip3 install -U bools
 >
 > 兼容ES6，ES7<br>
 >
-> 支持pandas DataFrame直接写入es，且完成类型映射（date，object，number）。还可指定numeric_detection完成数值字符串的转换
+> 支持便捷的和pandas互操作
 
-#####  write、to_es
+#####  write
 
 ```python
 >>> from bools.dbc import ElasticSearch
@@ -33,16 +33,6 @@ pip3 install -U bools
 ```
 
 <img src="http://lbj.wiki/static/images/c9e43f58-d96b-11eb-9928-00163e30ead3.png" alt="image-20210630142413114" style="zoom:50%;" />
-
-```python
->>> from bools.dbc import ElasticSearch
->>> import pandas as pd
->>> es = ElasticSearch('localhost', 9200, patch_pandas=True)
-
->>> pd.DataFrame({'v':[4,5,6]}).to_es(index='test')
->>> pd.DataFrame({'v':['3.14','2.4',6]}).to_es(index='test', numeric_detection=True)
->>> pd.DataFrame({'v':[7,8,9],'index':['test-1','test-2','test-1']}).to_es(index_col='index')
-```
 
 ##### query、scroll_query
 
@@ -65,6 +55,23 @@ pip3 install -U bools
 ...                 }
 ...             }
 ...         }, batch_size=1000)
+```
+
+##### pd.read_es、pd.DataFrame.to_es
+
+*特性：写入es自动完成类型映射（date，object，number），还可指定numeric_detection完成数值字符串的转换。读取直接转化为DataFrame*
+
+```python
+>>> from bools.dbc import ElasticSearch
+>>> import pandas as pd
+>>> es = ElasticSearch('localhost', 9200, patch_pandas=True)
+# 数据写入
+>>> pd.DataFrame({'v':[4,5,6]}).to_es(index='test')
+>>> pd.DataFrame({'v':['3.14','2.4',6]}).to_es(index='test', numeric_detection=True)
+>>> pd.DataFrame({'v':[7,8,9],'index':['test-1','test-2','test-1']}).to_es(index_col='index')
+
+# 数据读取
+>>> pd.read_es('test', query_body={})   # 读取index="test"的全部数据（自动scroll读取）
 ```
 
 
@@ -248,6 +255,8 @@ ZeroDivisionError: division by zero
 ### 0.4.0
 
 > 增加dbc（数据库连接）包，包含Elasticsearch模块
+>
+> 支持es读写以及对应pandas的操作
 
 ### 0.3.3
 

@@ -157,4 +157,11 @@ class ElasticSearch:
             ]
             self._batch_write(inner_self.index[0], ndjsons, batch_size)
 
+        def read_es(index, query_body: dict, batch_size=1000, timeout=180):
+            return pd.DataFrame([
+                hit['_source']
+                for hit in self.scroll_query(index, query_body, batch_size, timeout)['hits']['hits']
+            ])
+
         pd.DataFrame.to_es = to_es
+        pd.read_es = read_es

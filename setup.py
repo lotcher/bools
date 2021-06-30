@@ -8,12 +8,12 @@ with open(path.join(BASE_DIR, 'requirements.txt'), encoding='utf-8') as f:
 
 setup(
     name='bools',
-    version='0.4.0.1',
+    version='0.4.0.2',
     description='Collection of common tools in Python',
     author='bowaer',
     author_email='cb229435444@outlook.com',
     license='MIT',
-    keywords=['tools', 'datetime', 'logger', 'functools', 'database'],
+    keywords=['tools', 'datetime', 'logger', 'functools', 'elasticsearch'],
     url='https://github.com/lotcher/bools',
     packages=find_packages(),
     install_requires=requirements,
