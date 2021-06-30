@@ -6,6 +6,7 @@ from typing import List
 
 from .dbc import http_json_res_parse
 from bools.functools import catch
+from bools.log import Logger
 
 TEMPLATE_NAME = 'bowaer'
 _HEADERS = {
@@ -35,6 +36,35 @@ class ElasticSearch:
 
     def write(self, index: str, data: List[dict], batch_size=10000):
         self._batch_write(index, ['{"index":{}}\n' + json.dumps(item) + '\n' for item in data], batch_size)
+
+    @http_json_res_parse
+    def query(self, index, query_body: dict, sort_by_score=False, create_scroll=False, timeout=60):
+        if 'sort' not in query_body and not sort_by_score:
+            # 不要求按照分数排序搜索会更快一些
+            query_body['sort'] = ['_doc']
+        url = f'{self.base_url}/{index}/_search{f"?scroll={timeout // 60}m" if create_scroll else ""}'
+        return requests.get(url, headers=_HEADERS, data=json.dumps(query_body), timeout=timeout)
+
+    def scroll_query(self, index, query_body: dict, batch_size=1000, timeout=180):
+        if 'size' not in query_body:
+            query_body['size'] = batch_size
+        result = self.query(index, query_body, create_scroll=True, timeout=timeout)
+        expect_count = result['hits']['total'] if self.version <= 6 else result['hits']['total']['value']
+        scroll_url = f'{self.base_url}/_search/scroll'
+        scroll_data = json.dumps({'scroll_id': result['_scroll_id'], 'scroll': f'{timeout // 60}m'})
+
+        while True:
+            res = requests.post(
+                scroll_url, data=scroll_data,
+                headers=_HEADERS, timeout=timeout
+            ).json()
+            if 'error' in res or not res['hits']['hits']:
+                if len(result['hits']['hits']) != expect_count:
+                    Logger.warning("查询结果条数与预期不相等，请尝试调大timeout参数或者检查网络")
+                return result
+
+            result['took'] += res['took']
+            result['hits']['hits'] += (res['hits']['hits'])
 
     @http_json_res_parse
     def delete(self, index_pattern):

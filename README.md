@@ -18,7 +18,7 @@ pip3 install -U bools
 
 #### ElasticSearch
 
-> 支持方便的对ES进行写入分批写入操作<br>
+> 支持方便的对ES进行读写操作<br>
 >
 > 兼容ES6，ES7<br>
 >
@@ -42,6 +42,29 @@ pip3 install -U bools
 >>> pd.DataFrame({'v':[4,5,6]}).to_es(index='test')
 >>> pd.DataFrame({'v':['3.14','2.4',6]}).to_es(index='test', numeric_detection=True)
 >>> pd.DataFrame({'v':[7,8,9],'index':['test-1','test-2','test-1']}).to_es(index_col='index')
+```
+
+##### query、scroll_query
+
+```python
+>>> from bools.dbc import ElasticSearch
+>>> es = ElasticSearch(user='elastic', password='cb1998827', patch_pandas=True)
+>>> es.query('test', {
+...             "query": {
+...                 "terms": {
+...                     "a": [1]
+...                 }
+...             }
+...	    })
+
+
+>>> es.scroll_query('test', {
+...             "query": {
+...                 "terms": {
+...                     "a": [1]
+...                 }
+...             }
+...         }, batch_size=1000)
 ```
 
 
