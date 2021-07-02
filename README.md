@@ -14,7 +14,7 @@ pip3 install -U bools
 
 ## 文档
 
-### doc 「数据库连接」
+### dbc 「数据库连接」
 
 #### ElasticSearch
 

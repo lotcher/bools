@@ -100,6 +100,8 @@ class ElasticSearch:
                 "mappings": {
                     "dynamic_date_formats": [
                         "yyyy-MM-dd HH:mm:ss.SSSZ||epoch_millis",
+                        "yyyy-MM-dd HH:mm:ss.SSSSSSZ||epoch_millis",
+                        "yyyy-MM-dd HH:mm:ss.SSSSSSSSSZ||epoch_millis",
                         "yyyy-MM-dd HH:mm:ssZ||epoch_millis"
                     ],
                     "dynamic_templates": [
