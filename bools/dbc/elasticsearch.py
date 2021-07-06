@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from typing import List
 
-from .dbc import http_json_res_parse
+from .dbc import DBC, http_json_res_parse
 from bools.functools import catch
 from bools.log import Logger
 
@@ -15,23 +15,15 @@ _HEADERS = {
 
 
 @dataclass
-class ElasticSearch:
-    host: str = '127.0.0.1'
+class ElasticSearch(DBC):
     port: int = 9200
-    user: str = ''
-    password: str = ''
-    patch_pandas: bool = False
+    type: str = '_doc'
+
+    _ping_prefix = ''
 
     def __post_init__(self):
-        self.host = self.host.lstrip('http://').strip()
-        self.base_url = f'http://{f"{self.user}:{self.password}@" if self.user else ""}{self.host}:{self.port}'
-        ping = requests.get(self.base_url)
-        if ping.status_code != 200:
-            raise ConnectionError(f'无法连接到ES服务器，请检查配置是否正确\n\t{ping.text}')
-        if self.patch_pandas:
-            self._patch_pandas()
-        self.version = int(ping.json()['version']['number'][0])
-        self.type = '_doc'
+        super().__post_init__()
+        self.version = int(self._ping_result.json()['version']['number'][0])
         self.type_url = f'{self.type}/' if self.version <= 6 else ''
 
     def write(self, index: str, data: List[dict], batch_size=10000):
