@@ -22,7 +22,7 @@ class DBC(ABC):
         self.host = self.host.lstrip('https://').strip()
         self.base_url = f'http://{f"{self.user}:{self.password}@" if self.user else ""}{self.host}:{self.port}'
         if self._ping_prefix is not None:
-            ping = requests.get(self.base_url)
+            ping = requests.get(f'{self.base_url}{self._ping_prefix}')
             if ping.status_code != 200:
                 raise ConnectionError(f'无法连接到{self.__class__.__name__}服务器，请检查配置是否正确\n\t{ping.text}')
             self._ping_result = ping
@@ -48,7 +48,7 @@ def http_json_res_parse(_func=None, *, is_return=True):
         @wraps(func)
         def wrapper(*args, **kwargs):
             res = func(*args, **kwargs)
-            if res.status_code != 200:
+            if res.status_code >= 300:
                 raise ConnectionError(f'操作执行失败，错误码：[{res.status_code}]\n{res.text}')
             else:
                 if is_return:

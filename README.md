@@ -1,6 +1,6 @@
 [toc]
 
-# bools-0.4.0.5
+# bools-0.4.1
 
 常用功能集合，更高效的编写代码<br>
 
@@ -72,6 +72,33 @@ pip3 install -U bools
 
 # 数据读取
 >>> pd.read_es('test', query_body={})   # 读取index="test"的全部数据（自动scroll读取）
+```
+
+#### InfluxDB
+
+> 支持方便的对influxdb进行常用操作及基础优化<br>支持便捷的和pandas互操作
+>
+
+##### write、query
+
+*同Elasticsearch操作*
+
+##### pd.read_influxdb、pd.DataFrame.to_influxdb
+
+*特性：自适应time列（字符串，date（有无时区），任意位时间戳）*
+
+```python
+>>> from bools.dbc import InfluxDB
+>>> import pandas as pd
+>>> influxdb = InfluxDB(host='localhost', port=8086, database='bowaer', patch_pandas=True)
+>>> pd.read_influxdb('select * from test').head()
+                           count     src  succ_count
+time
+2021-07-07 18:07:52+08:00      0  bowaer           0
+2021-07-07 18:07:53+08:00      1  bowaer           1
+2021-07-07 18:07:54+08:00      2  bowaer           2
+2021-07-07 18:07:55+08:00      3  bowaer           3
+2021-07-07 18:07:56+08:00      4  bowaer           4
 ```
 
 
@@ -257,6 +284,8 @@ ZeroDivisionError: division by zero
 > 增加dbc（数据库连接）包，包含Elasticsearch模块
 >
 > 支持es读写以及对应pandas的操作
+> 
+> 支持influxdb常用操作及对应pandas操作
 
 ### 0.3.3
 
