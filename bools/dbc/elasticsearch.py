@@ -122,8 +122,12 @@ class ElasticSearch(DBC):
         import numpy as np
         from pandas.core.dtypes.dtypes import DatetimeTZDtype
 
-        def to_es(inner_self: pd.DataFrame, index=None, index_col=None, numeric_detection=False, batch_size=10000):
-            if inner_self.empty:
+        def to_es(
+                inner_self: pd.DataFrame, index=None, index_col=None, numeric_detection=False,
+                batch_size=10000, copy=True
+        ):
+            _self = inner_self.copy() if copy else inner_self
+            if _self.empty:
                 return
 
             if index and index_col:
@@ -132,24 +136,24 @@ class ElasticSearch(DBC):
                 raise ValueError('index和index_col参数必须指定其中的一个')
             if index:
                 index_col = '__$@index'
-                inner_self[index_col] = index
-            inner_self.index = inner_self.pop(index_col)
+                _self[index_col] = index
+            _self.index = _self.pop(index_col)
 
-            for col, dtype in zip(inner_self.columns, inner_self.dtypes):
+            for col, dtype in zip(_self.columns, _self.dtypes):
                 if dtype == np.dtype('<M8[ns]'):
-                    inner_self[col] = inner_self[col].astype('str') + '+0800'
+                    _self[col] = _self[col].astype('str') + '+0800'
                 elif isinstance(dtype, DatetimeTZDtype):
                     # es无法识别"+08:00"的时区标识
-                    inner_self[col] = inner_self[col].astype('str').apply(lambda x: ''.join(x.rsplit(':', 1)))
+                    _self[col] = _self[col].astype('str').apply(lambda x: ''.join(x.rsplit(':', 1)))
                 elif numeric_detection and dtype == np.object_:
-                    inner_self[col] = catch(except_return=inner_self[col], print_traceback=False)(
-                        lambda: inner_self[col].astype('float')
+                    _self[col] = catch(except_return=_self[col], print_traceback=False)(
+                        lambda: _self[col].astype('float')
                     )()
             ndjsons = [
                 json.dumps({'index': {'_index': index}}) + '\n' + item.to_json() + '\n'
-                for index, item in inner_self.iterrows()
+                for index, item in _self.iterrows()
             ]
-            self._batch_write(inner_self.index[0], ndjsons, batch_size)
+            self._batch_write(_self.index[0], ndjsons, batch_size)
 
         def read_es(index, query_body: dict, batch_size=1000, timeout=180):
             return pd.DataFrame([

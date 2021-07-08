@@ -69,13 +69,14 @@ class InfluxDB(DBC):
 
         def to_influxdb(
                 inner_self: pd.DataFrame, tag_cols, time_col='index',
-                measurement=None, measurement_col=None,
-                database: str = None, batch_size=10000, timeout=180
+                measurement=None, measurement_col=None, database: str = None,
+                batch_size=10000, timeout=180, copy=True
         ):
-            if inner_self.empty:
+            _self = inner_self.copy() if copy else inner_self
+            if _self.empty:
                 return
             if time_col != 'index':
-                inner_self.index = inner_self.pop(time_col)
+                _self.index = _self.pop(time_col)
 
             if measurement and measurement_col:
                 raise ValueError('measurement和measurement_col参数不能同时指定')
@@ -83,34 +84,34 @@ class InfluxDB(DBC):
                 raise ValueError('measurement和measurement_col参数必须指定其中的一个')
             if measurement:
                 measurement_col = f'__$@{_MEASUREMENT}'
-                inner_self[measurement_col] = measurement
+                _self[measurement_col] = measurement
 
             # hash顺序的字段写入更快
             tag_cols = set(tag_cols or [])
-            field_cols = set(inner_self.columns) - tag_cols - {measurement_col}
+            field_cols = set(_self.columns) - tag_cols - {measurement_col}
 
             try:
-                time_dtype = inner_self.index.dtype
+                time_dtype = _self.index.dtype
                 if time_dtype in [np.dtype(t) for t in ['int32', 'int64', 'float32', 'float64']]:
-                    inner_self.index = inner_self.index.astype('int')
-                    power = 19 - len(str(inner_self.index[0]))
+                    _self.index = _self.index.astype('int')
+                    power = 19 - len(str(_self.index[0]))
                     if power < 0 or power > 9:
                         raise ValueError(f'时间列：[{time_col}]格式不支持，时间戳支持ns,us,ms,s。请确认是否指定有效时间列')
 
-                    inner_self.index = inner_self.index * 10 ** power
+                    _self.index = _self.index * 10 ** power
                 elif time_dtype == np.dtype('O'):
-                    inner_self.index = pd.to_datetime(inner_self.index)
-                    time_dtype = inner_self.index.dtype
+                    _self.index = pd.to_datetime(_self.index)
+                    time_dtype = _self.index.dtype
 
                 if time_dtype == np.dtype('<M8[ns]'):
                     # 无时区数据当作UTC+8处理
-                    inner_self.index = inner_self.index.astype('int') - 8 * 3600 * int(1e9)
+                    _self.index = _self.index.astype('int') - 8 * 3600 * int(1e9)
                 elif isinstance(time_dtype, DatetimeTZDtype):
-                    inner_self.index = inner_self.index.astype('int')
+                    _self.index = _self.index.astype('int')
             except Exception:
                 raise ValueError(f'时间列：[{time_col}]格式不支持，当前支持时间戳(ns,us,ms,s), 时间字符串及date列类型')
 
-            points = inner_self.apply(
+            points = _self.apply(
                 lambda line: f'{line[measurement_col]}{"".join(f",{tag}={line[tag]}" for tag in tag_cols)}'
                              f' {",".join(f"{field}={line[field]}" for field in field_cols)} {line.name}'
                 , axis=1

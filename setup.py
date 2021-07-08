@@ -8,7 +8,7 @@ with open(path.join(BASE_DIR, 'requirements.txt'), encoding='utf-8') as f:
 
 setup(
     name='bools',
-    version='0.4.1',
+    version='0.4.1.1',
     description='Collection of common tools in Python',
     author='bowaer',
     author_email='cb229435444@outlook.com',
