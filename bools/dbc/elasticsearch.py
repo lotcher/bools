@@ -26,8 +26,9 @@ class ElasticSearch(DBC):
         self.version = int(self._ping_result.json()['version']['number'][0])
         self.type_url = f'{self.type}/' if self.version <= 6 else ''
 
-    def write(self, index: str, data: List[dict], batch_size=10000):
-        self._batch_write(index, ['{"index":{}}\n' + json.dumps(item) + '\n' for item in data], batch_size)
+    def write(self, index: str, data: List[dict], batch_size=10000, timeout=180):
+        self._batch_write(index=index, ndjsons=['{"index":{}}\n' + json.dumps(item) + '\n' for item in data],
+                          batch_size=batch_size, timeout=timeout)
 
     @http_json_res_parse
     def query(self, index, query_body: dict, sort_by_score=False, create_scroll=False, timeout=60):
@@ -63,20 +64,19 @@ class ElasticSearch(DBC):
         return requests.delete(f'{self.base_url}/{index_pattern}')
 
     @http_json_res_parse(is_return=False)
-    def _write(self, index, ndjson_data: str):
+    def _write(self, index, ndjson_data: str, timeout):
         return requests.post(
             # 如果url没有指定index，则调用方在action中指定
             url=f'{self.base_url}/{f"{index}/" if index else "/"}{self.type_url}_bulk',
-            data=ndjson_data,
-            headers=_HEADERS
+            data=ndjson_data, headers=_HEADERS, timeout=timeout
         )
 
-    def _batch_write(self, index, ndjsons: List[str], batch_size):
+    def _batch_write(self, index, ndjsons: List[str], batch_size, timeout):
         self._check_template(index if index.endswith("*") else re.split(r'\W', index)[0] + '*')
         for batch in range(len(ndjsons) // batch_size + 1):
             items = ndjsons[batch * batch_size:batch * batch_size + batch_size]
             if items:  # ES bulk操作body不能为空
-                self._write(index, ''.join(items))
+                self._write(index=index, ndjson_data=''.join(items), timeout=timeout)
 
     def _check_template(self, index_pattern):
         url = f'{self.base_url}/_template/{TEMPLATE_NAME}'
@@ -124,7 +124,7 @@ class ElasticSearch(DBC):
 
         def to_es(
                 inner_self: pd.DataFrame, index=None, index_col=None, numeric_detection=False,
-                batch_size=10000, copy=True
+                batch_size=10000, timeout=180, copy=True
         ):
             _self = inner_self.copy() if copy else inner_self
             if _self.empty:
@@ -153,7 +153,7 @@ class ElasticSearch(DBC):
                 json.dumps({'index': {'_index': index}}) + '\n' + item.to_json() + '\n'
                 for index, item in _self.iterrows()
             ]
-            self._batch_write(_self.index[0], ndjsons, batch_size)
+            self._batch_write(index=_self.index[0], ndjsons=ndjsons, batch_size=batch_size, timeout=timeout)
 
         def read_es(index, query_body: dict, batch_size=1000, timeout=180):
             return pd.DataFrame([
