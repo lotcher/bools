@@ -1,7 +1,10 @@
 import requests
+from dataclasses import dataclass
+from typing import Generator, Iterator, Union
+from itertools import islice
+from collections import namedtuple
 
 from .dbc import DBC, http_json_res_parse
-from dataclasses import dataclass
 
 _CREATE, _DROP = 'CREATE', 'DROP'
 _DATABASE, _MEASUREMENT = 'database', 'measurement'
@@ -12,7 +15,7 @@ class InfluxDB(DBC):
     port: int = 8086
     database: str = None
 
-    _ping_prefix = '/health'
+    _ping_prefix = '/ping?verbose=true'
 
     def __post_init__(self):
         super().__post_init__()
@@ -26,14 +29,18 @@ class InfluxDB(DBC):
         query_url = f'{self.query_url}?db={database}&pretty=false&chunked={batch_size}&q={influxql}'
         return requests.get(query_url, timeout=timeout)
 
-    def write(self, points: list, database: str = None, precision='n', batch_size=10000, timeout=180):
+    def write(self, points: Union[Iterator, Generator], database: str = None, precision='n',
+              batch_size=10000, timeout=180):
         database = self._check_database(database)
-        for batch in range(len(points) // batch_size + 1):
-            items = points[batch * batch_size:batch * batch_size + batch_size]
+        points = (point for point in points)
+        while True:
+            items = list(islice(points, batch_size))
+            if not items:
+                break
             self._write(points=items, database=database, precision=precision, timeout=timeout)
 
     @http_json_res_parse(is_return=False)
-    def _write(self, points: list, database, precision='n', timeout=180):
+    def _write(self, points: list, database, precision, timeout):
         write_url = f'{self.write_url}?db={database}&precision={precision}'
         return requests.post(write_url, data='\n'.join(points), timeout=timeout)
 
@@ -67,11 +74,9 @@ class InfluxDB(DBC):
                 result = pd.concat([result, df], axis=1)
             return result
 
-        def to_influxdb(
-                inner_self: pd.DataFrame, tag_cols, time_col='index',
-                measurement=None, measurement_col=None, database: str = None,
-                batch_size=10000, timeout=180, copy=True
-        ):
+        def to_influxdb(inner_self: pd.DataFrame, tag_cols, time_col='index',
+                        measurement=None, measurement_col=None, database: str = None,
+                        batch_size=10000, timeout=180, copy=True):
             _self = inner_self.copy() if copy else inner_self
             if _self.empty:
                 return
@@ -83,12 +88,15 @@ class InfluxDB(DBC):
             if not (measurement or measurement_col):
                 raise ValueError('measurement和measurement_col参数必须指定其中的一个')
             if measurement:
-                measurement_col = f'__$@{_MEASUREMENT}'
+                measurement_col = f'{_MEASUREMENT}_bowaer2021'
                 _self[measurement_col] = measurement
 
+            # iter tuples迭代会修改非命名列名. e.g #_test => _1
+            name_transfers = dict(zip(_self.columns, namedtuple('influxdb', _self.columns, rename=True)._fields))
+
             # hash顺序的字段写入更快
-            tag_cols = set(tag_cols or [])
-            field_cols = set(_self.columns) - tag_cols - {measurement_col}
+            tag_cols = {name_transfers[col] for col in (tag_cols or [])}
+            field_cols = {name_transfers[col] for col in (set(_self.columns) - tag_cols - {measurement_col})}
 
             try:
                 time_dtype = _self.index.dtype
@@ -111,11 +119,12 @@ class InfluxDB(DBC):
             except Exception:
                 raise ValueError(f'时间列：[{time_col}]格式不支持，当前支持时间戳(ns,us,ms,s), 时间字符串及date列类型')
 
-            points = _self.apply(
-                lambda line: f'{line[measurement_col]}{"".join(f",{tag}={line[tag]}" for tag in tag_cols)}'
-                             f' {",".join(f"{field}={line[field]}" for field in field_cols)} {line.name}'
-                , axis=1
-            ).tolist()
+            points = (
+                f'{getattr(name_tuple, measurement_col)}'
+                f'{"".join(f",{tag}={getattr(name_tuple, tag)}" for tag in tag_cols)}'
+                f' {",".join(f"{field}={getattr(name_tuple, field)}" for field in field_cols)} {name_tuple[0]}'
+                for name_tuple in _self.itertuples()
+            )
             self.write(points=points, database=database, batch_size=batch_size, timeout=timeout)
 
         pd.read_influxdb = read_influxdb

@@ -2,7 +2,8 @@ import requests
 import json
 import re
 from dataclasses import dataclass
-from typing import List
+from typing import Iterator, Generator
+from itertools import islice
 
 from .dbc import DBC, http_json_res_parse
 from bools.functools import catch
@@ -26,8 +27,8 @@ class ElasticSearch(DBC):
         self.version = int(self._ping_result.json()['version']['number'][0])
         self.type_url = f'{self.type}/' if self.version <= 6 else ''
 
-    def write(self, index: str, data: List[dict], batch_size=10000, timeout=180):
-        self._batch_write(index=index, ndjsons=['{"index":{}}\n' + json.dumps(item) + '\n' for item in data],
+    def write(self, index: str, data: Iterator[dict], batch_size=10000, timeout=180):
+        self._batch_write(index=index, ndjsons=('{"index":{}}\n' + json.dumps(item) + '\n' for item in data),
                           batch_size=batch_size, timeout=timeout)
 
     @http_json_res_parse
@@ -71,12 +72,13 @@ class ElasticSearch(DBC):
             data=ndjson_data, headers=_HEADERS, timeout=timeout
         )
 
-    def _batch_write(self, index, ndjsons: List[str], batch_size, timeout):
+    def _batch_write(self, index, ndjsons: Generator[str, None, None], batch_size, timeout):
         self._check_template(index if index.endswith("*") else re.split(r'\W', index)[0] + '*')
-        for batch in range(len(ndjsons) // batch_size + 1):
-            items = ndjsons[batch * batch_size:batch * batch_size + batch_size]
-            if items:  # ES bulk操作body不能为空
-                self._write(index=index, ndjson_data=''.join(items), timeout=timeout)
+        while True:
+            items = list(islice(ndjsons, batch_size))
+            if not items:  # ES bulk操作body不能为空
+                break
+            self._write(index=index, ndjson_data=''.join(items), timeout=timeout)
 
     def _check_template(self, index_pattern):
         url = f'{self.base_url}/_template/{TEMPLATE_NAME}'
@@ -149,10 +151,11 @@ class ElasticSearch(DBC):
                     _self[col] = catch(except_return=_self[col], print_traceback=False)(
                         lambda: _self[col].astype('float')
                     )()
-            ndjsons = [
-                json.dumps({'index': {'_index': index}}) + '\n' + item.to_json() + '\n'
-                for index, item in _self.iterrows()
-            ]
+            ndjsons = (
+                f"{json.dumps({'index': {'_index': name_tuple[0]}})}\n"
+                f"{json.dumps(dict(zip(_self.columns, name_tuple[1:])))}\n"
+                for name_tuple in _self.itertuples()
+            )
             self._batch_write(index=_self.index[0], ndjsons=ndjsons, batch_size=batch_size, timeout=timeout)
 
         def read_es(index, query_body: dict, batch_size=1000, timeout=180):

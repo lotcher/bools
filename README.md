@@ -1,6 +1,6 @@
 [toc]
 
-# bools-0.4.1.1
+# bools-0.4.2
 
 常用功能集合，更高效的编写代码<br>
 
@@ -286,6 +286,8 @@ ZeroDivisionError: division by zero
 > 支持es读写以及对应pandas的操作
 > 
 > 支持influxdb常用操作及对应pandas操作
+> 
+> 优化pandas dataframe写入数据库性能和内存
 
 ### 0.3.3
 
