@@ -100,7 +100,14 @@ class InfluxDB(DBC):
 
             try:
                 time_dtype = _self.index.dtype
-                if time_dtype in [np.dtype(t) for t in ['int32', 'int64', 'float32', 'float64']]:
+                if time_dtype in {np.dtype(t) for t in ['int32', 'int64', 'float32', 'float64']}:
+                    """
+                    python3.9  pandas1.2.4  numpy 1.19.3下出现此报错，升级numpy可解决
+                    >>> time_dtype in [np.dtype(t) for t in ['int32', 'int64', 'float32', 'float64']]
+                        Traceback (most recent call last):
+                          File "<stdin>", line 1, in <module>
+                        TypeError: Cannot interpret 'datetime64[ns, tzfile('PRC')]' as a data type
+                    """
                     _self.index = _self.index.astype('int')
                     power = 19 - len(str(_self.index[0]))
                     if power < 0 or power > 9:

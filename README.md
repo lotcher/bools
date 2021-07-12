@@ -1,6 +1,6 @@
 [toc]
 
-# bools-0.4.2
+# bools-0.4.2.1
 
 常用功能集合，更高效的编写代码<br>
 
@@ -288,6 +288,8 @@ ZeroDivisionError: division by zero
 > 支持influxdb常用操作及对应pandas操作
 > 
 > 优化pandas dataframe写入数据库性能和内存
+> 
+> 解决numpy特殊版本下（已知1.19.3）dtype类型in list判断时报Cannot interpret xxxx as a data type
 
 ### 0.3.3
 

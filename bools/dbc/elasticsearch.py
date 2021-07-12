@@ -124,10 +124,8 @@ class ElasticSearch(DBC):
         import numpy as np
         from pandas.core.dtypes.dtypes import DatetimeTZDtype
 
-        def to_es(
-                inner_self: pd.DataFrame, index=None, index_col=None, numeric_detection=False,
-                batch_size=10000, timeout=180, copy=True
-        ):
+        def to_es(inner_self: pd.DataFrame, index=None, index_col=None, numeric_detection=False,
+                  batch_size=10000, timeout=180, copy=True):
             _self = inner_self.copy() if copy else inner_self
             if _self.empty:
                 return
