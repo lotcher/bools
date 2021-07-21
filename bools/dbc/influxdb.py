@@ -21,7 +21,10 @@ class InfluxDB(DBC):
         super().__post_init__()
         self.query_url = f'{self.base_url}/query'
         self.write_url = f'{self.base_url}/write'
-        self.version = int(self._ping_result.json()['version'][0])
+
+    @property
+    def _version(self):
+        return int(self._ping_result.json()['version'][0])
 
     @http_json_res_parse
     def query(self, influxql: str, database: str = None, batch_size=10000, timeout=180):

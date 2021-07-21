@@ -24,8 +24,11 @@ class ElasticSearch(DBC):
 
     def __post_init__(self):
         super().__post_init__()
-        self.version = int(self._ping_result.json()['version']['number'][0])
         self.type_url = f'{self.type}/' if self.version <= 6 else ''
+
+    @property
+    def _version(self):
+        return int(self._ping_result.json()['version']['number'][0])
 
     def write(self, index: str, data: Iterator[dict], batch_size=10000, timeout=180):
         self._batch_write(index=index, ndjsons=('{"index":{}}\n' + json.dumps(item) + '\n' for item in data),
@@ -96,7 +99,10 @@ class ElasticSearch(DBC):
                         "yyyy-MM-dd HH:mm:ss.SSSZ||epoch_millis",
                         "yyyy-MM-dd HH:mm:ss.SSSSSSZ||epoch_millis",
                         "yyyy-MM-dd HH:mm:ss.SSSSSSSSSZ||epoch_millis",
-                        "yyyy-MM-dd HH:mm:ssZ||epoch_millis"
+                        "yyyy-MM-dd HH:mm:ssZ||epoch_millis",
+                        "yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis",
+                        "yyyy-MM-dd'T'HH:mm:ss.SSSZ||epoch_millis",
+                        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'||epoch_millis"
                     ],
                     "dynamic_templates": [
                         {
