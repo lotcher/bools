@@ -77,13 +77,13 @@ class InfluxDB(DBC):
                 result = pd.concat([result, df], axis=1)
             return result
 
-        def to_influxdb(inner_self: pd.DataFrame, tag_cols, time_col='index',
-                        measurement=None, measurement_col=None, database: str = None,
+        def to_influxdb(inner_self: pd.DataFrame, measurement=None, measurement_col=None,
+                        tag_cols=None, time_col='_index', database: str = None,
                         batch_size=10000, timeout=180, copy=True):
             _self = inner_self.copy() if copy else inner_self
             if _self.empty:
                 return
-            if time_col != 'index':
+            if time_col != '_index':
                 _self.index = _self.pop(time_col)
 
             if measurement and measurement_col:
