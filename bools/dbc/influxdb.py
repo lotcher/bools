@@ -95,11 +95,14 @@ class InfluxDB(DBC):
                 _self[measurement_col] = measurement
 
             # iter tuples迭代会修改非命名列名. e.g #_test => _1
-            name_transfers = dict(zip(_self.columns, namedtuple('influxdb', _self.columns, rename=True)._fields))
+            name_transfers = dict(zip(
+                ['Index', *_self.columns],
+                namedtuple('influxdb', ['Index', *_self.columns], rename=True)._fields
+            ))
 
             # hash顺序的字段写入更快
-            tag_cols = {name_transfers[col] for col in (tag_cols or [])}
-            field_cols = {name_transfers[col] for col in (set(_self.columns) - tag_cols - {measurement_col})}
+            tag_cols = {col for col in (tag_cols or [])}
+            field_cols = {col for col in (set(_self.columns) - tag_cols - {measurement_col})}
 
             try:
                 time_dtype = _self.index.dtype
@@ -131,8 +134,9 @@ class InfluxDB(DBC):
 
             points = (
                 f'{getattr(name_tuple, measurement_col)}'
-                f'{"".join(f",{tag}={getattr(name_tuple, tag)}" for tag in tag_cols)}'
-                f' {",".join(f"{field}={getattr(name_tuple, field)}" for field in field_cols)} {name_tuple[0]}'
+                f'{"".join(f",{t}={getattr(name_tuple, name_transfers[t])}" for t in tag_cols if pd.notna(getattr(name_tuple, name_transfers[t])))}'
+                f' {",".join(f"{f}={getattr(name_tuple, name_transfers[f])}" for f in field_cols if pd.notna(getattr(name_tuple, name_transfers[f])))}'
+                f' {name_tuple[0]}'
                 for name_tuple in _self.itertuples()
             )
             self.write(points=points, database=database, batch_size=batch_size, timeout=timeout)
