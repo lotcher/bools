@@ -19,13 +19,17 @@ class Datetime(datetime):
         return super().__new__(cls, *args[:7], **kwargs)
 
     @classmethod
-    def fromtimestamp(cls, ts) -> 'Datetime':
+    def fromtimestamp(cls, ts, tz_info=None) -> 'Datetime':
         len_ts = len(str(int(ts)))
         if (len_ts - 10) % 3 != 0:
             raise ValueError(f'KPI数据时间戳格式不符合规范，必须是s、ms、us、ns中的一种，当前（{ts}）')
         else:
             ts = ts // 10 ** (len_ts - 10)
-        return super().fromtimestamp(ts)
+        return Datetime.from_datetime(super().fromtimestamp(ts, tz_info))
+
+    @classmethod
+    def now(cls, tz_info=None) -> 'Datetime':
+        return Datetime.from_datetime(super().now(tz_info))
 
     def to_str(self, start=0, end=6) -> str:
         if not 0 <= start < end <= 8:
