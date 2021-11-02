@@ -40,7 +40,7 @@ class ElasticSearch(DBC):
             # 不要求按照分数排序搜索会更快一些
             query_body['sort'] = ['_doc']
         url = f'{self.base_url}/{index}/_search{f"?scroll={timeout // 60}m" if create_scroll else ""}'
-        return requests.get(url, headers=_HEADERS, data=json.dumps(query_body), timeout=timeout)
+        return requests.get(url, headers=_HEADERS, data=json.dumps(query_body), timeout=timeout, verify=False)
 
     def scroll_query(self, index, query_body: dict, batch_size=1000, timeout=180):
         if 'size' not in query_body:
@@ -53,7 +53,7 @@ class ElasticSearch(DBC):
         while True:
             res = requests.post(
                 scroll_url, data=scroll_data,
-                headers=_HEADERS, timeout=timeout
+                headers=_HEADERS, timeout=timeout, verify=False
             ).json()
             if 'error' in res or not res['hits']['hits']:
                 if len(result['hits']['hits']) != expect_count:
@@ -65,14 +65,14 @@ class ElasticSearch(DBC):
 
     @http_json_res_parse
     def delete(self, index_pattern):
-        return requests.delete(f'{self.base_url}/{index_pattern}')
+        return requests.delete(f'{self.base_url}/{index_pattern}', verify=False)
 
     @http_json_res_parse(is_return=False)
     def _write(self, index, ndjson_data: str, timeout):
         return requests.post(
             # 如果url没有指定index，则调用方在action中指定
             url=f'{self.base_url}/{f"{index}/" if index else "/"}{self.type_url}_bulk',
-            data=ndjson_data, headers=_HEADERS, timeout=timeout
+            data=ndjson_data, headers=_HEADERS, timeout=timeout, verify=False
         )
 
     def _batch_write(self, index, ndjsons: Generator[str, None, None], batch_size, timeout):
@@ -85,7 +85,7 @@ class ElasticSearch(DBC):
 
     def _check_template(self, index_pattern):
         url = f'{self.base_url}/_template/{TEMPLATE_NAME}'
-        current_templates = requests.get(url).json()
+        current_templates = requests.get(url, verify=False).json()
         patterns = current_templates[TEMPLATE_NAME]['index_patterns'] if current_templates else []
         if index_pattern not in patterns:
             current_templates = {
@@ -123,7 +123,7 @@ class ElasticSearch(DBC):
     @http_json_res_parse
     def put_templates(self, templates: dict, template_name):
         url = f'{self.base_url}/_template/{template_name}'
-        return requests.put(url, headers=_HEADERS, data=json.dumps(templates))
+        return requests.put(url, headers=_HEADERS, data=json.dumps(templates), verify=False)
 
     def _patch_pandas(self):
         import pandas as pd

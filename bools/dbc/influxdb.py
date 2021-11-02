@@ -30,7 +30,7 @@ class InfluxDB(DBC):
     def query(self, influxql: str, database: str = None, batch_size=10000, timeout=180):
         database = self._check_database(database)
         query_url = f'{self.query_url}?db={database}&pretty=false&chunked={batch_size}&q={influxql}'
-        return requests.get(query_url, timeout=timeout)
+        return requests.get(query_url, timeout=timeout, verify=False)
 
     def write(self, points: Union[Iterator, Generator], database: str = None, precision='n',
               batch_size=10000, timeout=180):
@@ -45,7 +45,7 @@ class InfluxDB(DBC):
     @http_json_res_parse(is_return=False)
     def _write(self, points: list, database, precision, timeout):
         write_url = f'{self.write_url}?db={database}&precision={precision}'
-        return requests.post(write_url, data='\n'.join(points), timeout=timeout)
+        return requests.post(write_url, data='\n'.join(points), timeout=timeout, verify=False)
 
     def drop_measurement(self, measurement: str, database: str = None):
         self.action(f'{_DROP} {_MEASUREMENT} "{measurement}"', self._check_database(database))
@@ -58,7 +58,7 @@ class InfluxDB(DBC):
 
     @http_json_res_parse(is_return=False)
     def action(self, influxql, database=''):
-        return requests.post(f'{self.query_url}?db={database}&q={influxql}')
+        return requests.post(f'{self.query_url}?db={database}&q={influxql}', verify=False)
 
     def _patch_pandas(self):
         import pandas as pd

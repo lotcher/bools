@@ -1,4 +1,6 @@
 import json
+import re
+
 import requests
 from json.decoder import JSONDecodeError
 from functools import wraps
@@ -19,8 +21,8 @@ class DBC(ABC):
     _ping_result = None
 
     def __post_init__(self):
-        self.host = self.host.lstrip('https://').strip()
-        self.base_url = f'http://{f"{self.user}:{self.password}@" if self.user else ""}{self.host}:{self.port}'
+        protocol, self.host = re.findall("^(https?://)?(.*?)$", self.host)[0]
+        self.base_url = f'{protocol or "http://"}{f"{self.user}:{self.password}@" if self.user else ""}{self.host}:{self.port}'
         if self._ping_prefix is not None and not self.version:
             ping = requests.get(f'{self.base_url}{self._ping_prefix}')
             if ping.status_code != 200:
