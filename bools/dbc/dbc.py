@@ -24,7 +24,7 @@ class DBC(ABC):
         protocol, self.host = re.findall("^(https?://)?(.*?)$", self.host)[0]
         self.base_url = f'{protocol or "http://"}{f"{self.user}:{self.password}@" if self.user else ""}{self.host}:{self.port}'
         if self._ping_prefix is not None and not self.version:
-            ping = requests.get(f'{self.base_url}{self._ping_prefix}')
+            ping = requests.get(f'{self.base_url}{self._ping_prefix}', verify=False)
             if ping.status_code != 200:
                 raise ConnectionError(f'无法连接到{self.__class__.__name__}服务器，请检查配置是否正确\n\t{ping.text}\n'
                                       f'若确定服务器地址无误，可手动指定version参数关闭服务器连接检查')

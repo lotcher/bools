@@ -31,8 +31,10 @@ class ElasticSearch(DBC):
         return int(self._ping_result.json()['version']['number'][0])
 
     def write(self, index: str, data: Iterator[dict], batch_size=10000, timeout=180):
-        self._batch_write(index=index, ndjsons=('{"index":{}}\n' + json.dumps(item) + '\n' for item in data),
-                          batch_size=batch_size, timeout=timeout)
+        return self._batch_write(
+            index=index, ndjsons=('{"index":{}}\n' + json.dumps(item) + '\n' for item in data),
+            batch_size=batch_size, timeout=timeout
+        )
 
     @http_json_res_parse
     def query(self, index, query_body: dict, sort_by_score=False, create_scroll=False, timeout=60):
@@ -42,32 +44,38 @@ class ElasticSearch(DBC):
         url = f'{self.base_url}/{index}/_search{f"?scroll={timeout // 60}m" if create_scroll else ""}'
         return requests.get(url, headers=_HEADERS, data=json.dumps(query_body), timeout=timeout, verify=False)
 
-    def scroll_query(self, index, query_body: dict, batch_size=1000, timeout=180):
+    def scroll_query(self, index, query_body: dict, batch_size=1000, timeout=180, total_size=None, log=False):
         if 'size' not in query_body:
             query_body['size'] = batch_size
         result = self.query(index, query_body, create_scroll=True, timeout=timeout)
-        expect_count = result['hits']['total'] if self.version <= 6 else result['hits']['total']['value']
+        expect_count = total_size or (
+            result['hits']['total'] if self.version <= 6 else result['hits']['total']['value']
+        )
         scroll_url = f'{self.base_url}/_search/scroll'
         scroll_data = json.dumps({'scroll_id': result['_scroll_id'], 'scroll': f'{timeout // 60}m'})
-
+        hits, cost = [], 0
         while True:
             res = requests.post(
                 scroll_url, data=scroll_data,
                 headers=_HEADERS, timeout=timeout, verify=False
             ).json()
-            if 'error' in res or not res['hits']['hits']:
-                if len(result['hits']['hits']) != expect_count:
-                    Logger.warning("查询结果条数与预期不相等，请尝试调大timeout参数或者检查网络")
+            if 'error' in res or not res['hits']['hits'] or len(hits) >= expect_count:
+                if len(hits) < expect_count:
+                    Logger.warning("查询结果条数少于预期，请尝试调大timeout参数或者检查网络")
+                result['took'] = cost
+                result['hits']['hits'] = hits[:expect_count]
                 return result
 
-            result['took'] += res['took']
-            result['hits']['hits'] += (res['hits']['hits'])
+            cost += res['took']
+            hits += (res['hits']['hits'])
+            if log:
+                Logger.info(f"take {len(hits)}, es query cost {cost}ms")
 
     @http_json_res_parse
     def delete(self, index_pattern):
         return requests.delete(f'{self.base_url}/{index_pattern}', verify=False)
 
-    @http_json_res_parse(is_return=False)
+    @http_json_res_parse
     def _write(self, index, ndjson_data: str, timeout):
         return requests.post(
             # 如果url没有指定index，则调用方在action中指定
@@ -81,7 +89,12 @@ class ElasticSearch(DBC):
             items = list(islice(ndjsons, batch_size))
             if not items:  # ES bulk操作body不能为空
                 break
-            self._write(index=index, ndjson_data=''.join(items), timeout=timeout)
+            write_result = self._write(index=index, ndjson_data=''.join(items), timeout=timeout)
+            if write_result.get('errors') is True:
+                Logger.error('\n'.join([
+                    str(item.get('index', {}).get('error', ''))
+                    for item in write_result.get('items', [{}])
+                ][:10]))
 
     def _check_template(self, index_pattern):
         url = f'{self.base_url}/_template/{TEMPLATE_NAME}'
@@ -160,12 +173,15 @@ class ElasticSearch(DBC):
                 f"{json.dumps(dict(zip(_self.columns, name_tuple[1:])))}\n"
                 for name_tuple in _self.itertuples()
             )
-            self._batch_write(index=_self.index[0], ndjsons=ndjsons, batch_size=batch_size, timeout=timeout)
+            return self._batch_write(
+                index=_self.index[0], ndjsons=ndjsons, batch_size=batch_size, timeout=timeout
+            )
 
-        def read_es(index, query_body: dict, batch_size=1000, timeout=180):
+        def read_es(index, query_body: dict, batch_size=1000, timeout=180, total_size=None, log=False):
             return pd.DataFrame([
                 hit['_source']
-                for hit in self.scroll_query(index, query_body, batch_size, timeout)['hits']['hits']
+                for hit in
+                self.scroll_query(index, query_body, batch_size, timeout, total_size, log)['hits']['hits']
             ])
 
         pd.DataFrame.to_es = to_es
