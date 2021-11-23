@@ -92,9 +92,9 @@ class ElasticSearch(DBC):
             write_result = self._write(index=index, ndjson_data=''.join(items), timeout=timeout)
             if write_result.get('errors') is True:
                 Logger.error('\n'.join([
-                    str(item.get('index', {}).get('error', ''))
-                    for item in write_result.get('items', [{}])
-                ][:10]))
+                                           str(item.get('index', {}).get('error', ''))
+                                           for item in write_result.get('items', [{}])
+                                       ][:10]))
 
     def _check_template(self, index_pattern):
         url = f'{self.base_url}/_template/{TEMPLATE_NAME}'
@@ -170,7 +170,7 @@ class ElasticSearch(DBC):
                     )()
             ndjsons = (
                 f"{json.dumps({'index': {'_index': name_tuple[0]}})}\n"
-                f"{json.dumps(dict(zip(_self.columns, name_tuple[1:])))}\n"
+                f"{json.dumps({col: value for col, value in zip(_self.columns, name_tuple[1:]) if pd.notna(value)})}\n"
                 for name_tuple in _self.itertuples()
             )
             return self._batch_write(
