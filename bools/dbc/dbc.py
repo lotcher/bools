@@ -51,6 +51,19 @@ class DBC(ABC):
     def _version(self):
         return -1
 
+    @classmethod
+    def is_na(cls, value):
+        import pandas as pd
+        result = pd.isna(value)
+        if isinstance(result, bool):
+            return result
+        else:
+            return all(result)
+
+    @classmethod
+    def not_na(cls, value):
+        return not cls.is_na(value)
+
 
 def http_json_res_parse(_func=None, *, is_return=True):
     def decorator(func):

@@ -170,7 +170,7 @@ class ElasticSearch(DBC):
                     )()
             ndjsons = (
                 f"{json.dumps({'index': {'_index': name_tuple[0]}})}\n"
-                f"{json.dumps({col: value for col, value in zip(_self.columns, name_tuple[1:]) if pd.notna(value)})}\n"
+                f"{json.dumps({col: value for col, value in zip(_self.columns, name_tuple[1:]) if self.not_na(value)})}\n"
                 for name_tuple in _self.itertuples()
             )
             return self._batch_write(
