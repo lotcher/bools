@@ -2,7 +2,7 @@ import requests
 import json
 import re
 from dataclasses import dataclass
-from typing import Iterator, Generator
+from typing import Iterator, Generator, Union
 from itertools import islice
 
 from .dbc import DBC, http_json_res_parse
@@ -76,6 +76,15 @@ class ElasticSearch(DBC):
         return requests.delete(f'{self.base_url}/{index_pattern}', verify=False)
 
     @http_json_res_parse
+    def create_or_cover(self, index: str, document: Union[str, dict], doc_id: str = None):
+        if isinstance(document, dict):
+            document = json.dumps(document)
+        return requests.post(
+            f'{self.base_url}/{index}/_doc/{doc_id if doc_id else ""}',
+            headers=_HEADERS, data=document
+        )
+
+    @http_json_res_parse
     def _write(self, index, ndjson_data: str, timeout):
         return requests.post(
             # 如果url没有指定index，则调用方在action中指定
@@ -91,10 +100,12 @@ class ElasticSearch(DBC):
                 break
             write_result = self._write(index=index, ndjson_data=''.join(items), timeout=timeout)
             if write_result.get('errors') is True:
-                Logger.error('\n'.join([
-                                           str(item.get('index', {}).get('error', ''))
-                                           for item in write_result.get('items', [{}])
-                                       ][:10]))
+                Logger.error('\n'.join(
+                    [
+                        str(item.get('index', {}).get('error', ''))
+                        for item in write_result.get('items', [{}])
+                    ][:10]
+                ))
 
     def _check_template(self, index_pattern):
         url = f'{self.base_url}/_template/{TEMPLATE_NAME}'
