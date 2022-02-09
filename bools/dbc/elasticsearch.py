@@ -154,9 +154,10 @@ class ElasticSearch(DBC):
         import numpy as np
         from pandas.core.dtypes.dtypes import DatetimeTZDtype
 
-        def to_es(inner_self: pd.DataFrame, index=None, index_col=None, numeric_detection=False,
-                  batch_size=10000, timeout=180, copy=True):
+        def to_es(inner_self: pd.DataFrame, index=None, index_col=None, id_col=None,
+                  numeric_detection=False, batch_size=10000, timeout=180, copy=True):
             _self = inner_self.copy() if copy else inner_self
+            _self['__$@_id'] = _self[id_col] if id_col else None
             if _self.empty:
                 return
 
@@ -180,8 +181,8 @@ class ElasticSearch(DBC):
                         lambda: _self[col].astype('float')
                     )()
             ndjsons = (
-                f"{json.dumps({'index': {'_index': name_tuple[0]}})}\n"
-                f"{json.dumps({col: value for col, value in zip(_self.columns, name_tuple[1:]) if self.not_na(value)})}\n"
+                f"{json.dumps({'index': {'_index': name_tuple[0], '_id': name_tuple[-1]}})}\n"
+                f"{json.dumps({col: value for col, value in zip(_self.columns, name_tuple[1:-1]) if self.not_na(value)})}\n"
                 for name_tuple in _self.itertuples()
             )
             return self._batch_write(
@@ -191,8 +192,7 @@ class ElasticSearch(DBC):
         def read_es(index, query_body: dict, batch_size=1000, timeout=180, total_size=None, log=False):
             return pd.DataFrame([
                 hit['_source']
-                for hit in
-                self.scroll_query(index, query_body, batch_size, timeout, total_size, log)['hits']['hits']
+                for hit in self.scroll_query(index, query_body, batch_size, timeout, total_size, log)['hits']['hits']
             ])
 
         pd.DataFrame.to_es = to_es
