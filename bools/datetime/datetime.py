@@ -19,12 +19,12 @@ class Datetime(datetime):
         return super().__new__(cls, *args[:7], **kwargs)
 
     @classmethod
-    def fromtimestamp(cls, ts, tz_info=None) -> 'Datetime':
-        len_ts = len(str(int(ts)))
-        if (len_ts - 10) % 3 != 0:
-            raise ValueError(f'KPI数据时间戳格式不符合规范，必须是s、ms、us、ns中的一种，当前（{ts}）')
+    def fromtimestamp(cls, ts, tz_info=None, precision='s') -> 'Datetime':
+        precisions = {'s': 1, 'ms': 1e3, 'us': 1e6, 'ns': 1e9}
+        if precision not in precisions:
+            raise ValueError(f'精度不符合规范，必须是{precisions.keys()}中的一种，当前（{precision}）')
         else:
-            ts = ts // 10 ** (len_ts - 10)
+            ts = ts / precisions[precision]
         return Datetime.from_datetime(super().fromtimestamp(ts, tz_info))
 
     @classmethod
