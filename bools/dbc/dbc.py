@@ -16,13 +16,16 @@ class DBC(ABC):
     password: str = ''
     patch_pandas: bool = False
     version: int = None
+    base_url: str = None
 
     _ping_prefix = None
     _ping_result = None
 
     def __post_init__(self):
-        protocol, self.host = re.findall("^(https?://)?(.*?)$", self.host)[0]
-        self.base_url = f'{protocol or "http://"}{f"{self.user}:{self.password}@" if self.user else ""}{self.host}:{self.port}'
+        if not self.base_url:
+            protocol, self.host = re.findall("^(https?://)?(.*?)$", self.host)[0]
+            self.base_url = f'{protocol or "http://"}{f"{self.user}:{self.password}@" if self.user else ""}{self.host}:{self.port}'
+
         if self._ping_prefix is not None and not self.version:
             ping = requests.get(f'{self.base_url}{self._ping_prefix}', verify=False)
             if ping.status_code != 200:
