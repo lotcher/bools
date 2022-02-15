@@ -156,10 +156,11 @@ class ElasticSearch(DBC):
 
         def to_es(inner_self: pd.DataFrame, index=None, index_col=None, id_col=None,
                   numeric_detection=False, batch_size=10000, timeout=180, copy=True):
+            if inner_self.empty:
+                return
+
             _self = inner_self.copy() if copy else inner_self
             _self['__$@_id'] = _self[id_col] if id_col else None
-            if _self.empty:
-                return
 
             if index and index_col:
                 raise ValueError('index和index_col参数不能同时指定')
