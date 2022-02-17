@@ -41,7 +41,7 @@ class ElasticSearch(DBC):
         if 'sort' not in query_body and not sort_by_score:
             # 不要求按照分数排序搜索会更快一些
             query_body['sort'] = ['_doc']
-        url = f'{self.base_url}/{index}/_search{f"?scroll={timeout // 60}m" if create_scroll else ""}'
+        url = f'{self.base_url}/{index}/_search{f"?scroll={timeout // 60}m&ignore_unavailable=true" if create_scroll else ""}'
         return requests.get(url, headers=_HEADERS, data=json.dumps(query_body), timeout=timeout, verify=False)
 
     def scroll_query(self, index, query_body: dict, batch_size=1000, timeout=180, total_size=None, log=False):
@@ -53,7 +53,7 @@ class ElasticSearch(DBC):
         )
         scroll_url = f'{self.base_url}/_search/scroll'
         scroll_data = json.dumps({'scroll_id': result['_scroll_id'], 'scroll': f'{timeout // 60}m'})
-        hits, cost = [], 0
+        hits, cost = result['hits']['hits'], 0
         while True:
             res = requests.post(
                 scroll_url, data=scroll_data,
